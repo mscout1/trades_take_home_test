@@ -20,4 +20,3 @@ Assumptions
 
 * Files are of resonable length, such that they can both be read into memory at once.
 
-* Case is consistent. The files always use 'May' never 'may' or 'MAY' or 'mAy', etc

@@ -12,6 +12,7 @@ extention. See "MO Developer Take-Home Test.docx" for details
 """
 
 import sys
+from decimal import Decimal
 
 #Mappings for sdt values
 symbol_map = {
@@ -75,19 +76,23 @@ class Trade(object):
     Futures are indicated by 'F'
     """
     def __init__(self, symbol, contract_type, strike, month, side, quantity, price, format=None):
-        self.symbol        = symbol
-        self.contract_type = contract_type
-        self.strike        = strike
-        self.month         = month
-        self.side          = side
-        self.quantity      = quantity
-        self.price         = price
+        self.symbol        = str(symbol)
+        self.contract_type = str(contract_type)
+        self.strike        = int(strike) if strike is not None else None
+        self.month         = int(month)
+        self.side          = int(side)
+        self.quantity      = int(quantity)
+        self.price         = Decimal(price)
         self._format       = format
+
+        assert self.contract_type in ('C','P','F')
+        assert 1 <= self.month <= 12
+        assert self.side in (1,2)
 
     @classmethod
     def fromCSV(cls, line):
         splitline = line.split(',')
-        return Trade(
+        return cls(
             symbol        = splitline[0],
             contract_type = splitline[1] if splitline[1] else 'F',
             strike        = splitline[2] if splitline[2] else None,
@@ -98,22 +103,22 @@ class Trade(object):
             format='CSV')
 
     @classmethod
-    def fromSDT(self, line):
+    def fromSDT(cls, line):
         splitline = line.split(';')
         contract_codes = splitline[0].split(' ')
         if contract_codes[1] in months:
             contract_type = 'F'
-            month = months[contract_codes[1]]
+            month = months[contract_codes[1].capitalize()]
             strike = None
         else:
-            contract_type, month = ctype_month_code[contract_codes[1][0]]
+            month, contract_type = ctype_month_code[contract_codes[1][0]]
             strike = contract_codes[1][1:]
-        return Trade(
+        return cls(
             symbol        = symbol_map[contract_codes[0]],
             contract_type = contract_type,
             strike        = strike,
             month         = month,
-            side          = splitline[1],
+            side          = buysell_map[splitline[1]],
             quantity      = splitline[2],
             price         = splitline[3],
             format='SDT')
@@ -152,7 +157,18 @@ def parse_trade_file(file):
     else:
         raise ValueError("Format not recognized: {0}".format(filename1))
 
-    return [trade_factory(line.strip()) for line in file if line.strip()]
+    lst = []
+    for line in file:
+        line=line.strip()
+        if not line:
+            continue
+        try:
+            lst.append(trade_factory(line))
+        except (AssertionError,ValueError,TypeError) as e:
+            print("Error parsing line:{0}\n\twith factory {1}\n\terror:{2}".format(
+                line, trade_factory, e), file=sys.stderr)
+            continue;
+    return lst
 
 
 def main(filename1, filename2):
