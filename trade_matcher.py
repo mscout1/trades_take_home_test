@@ -55,17 +55,18 @@ otype_month_code = {
 
 class Trade(object):
     """Trade class uses the csv format as it's internal format"""
-    def __init__(self, arg):
-        super(Trade, self).__init__()
-        self.arg = arg
+    def __init__(self, *args, format=None): #symbol, callput, strike, month, side, quantity, price):
+        #Todo: Stub
+        self.all = args
+        self.format = format
 
     @classmethod
-    def fromCSV(cls):
-        pass
+    def fromCSV(cls, line):
+        return Trade(line, format='CSV')
 
     @classmethod
-    def fromSDT(self):
-        pass
+    def fromSDT(self, line):
+        return Trade(line, format='SDT')
 
     def __eq__(self):
         pass
@@ -74,11 +75,34 @@ class Trade(object):
         pass
 
     def __str__(self):
-        pass
+        return "{0},{1}".format(self.format, str(self.all))
+
+    __repr__ = __str__
+
+def parse_trade_file(file):
+    header = file.readline()
+    if ',' in header:
+        trade_factory = Trade.fromCSV
+    elif ';' in header:
+        trade_factory = Trade.fromSDT
+    else:
+        raise ValueError("Format not recognized: {0}".format(filename1))
+
+    return [trade_factory(line) for line in file]
 
 
 def main(filename1, filename2):
-    pass
+    #Todo: Stub
+    with open(filename1) as f1:
+        L1 = parse_trade_file(f1)
+
+    with open(filename2) as f2:
+        L2 = parse_trade_file(f2)
+
+        from pprint import pprint
+        pprint(list(L1))
+        pprint(list(L2))
+
 
 def reconcile(list1, list2):
     """
