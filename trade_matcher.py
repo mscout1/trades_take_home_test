@@ -134,11 +134,16 @@ class Trade(object):
                 self.price,
                 )
 
-    def __eq__(self):
-        pass
+    def __eq__(self, other):
+        if not isinstance(other, Trade):
+            return False
+        return self._asTuple == other._asTuple
 
-    def __hash__():
-        pass
+    def __ne__(self, other):
+        return not self.__eq__(other)
+
+    def __hash__(self):
+        return hash(self._asTuple)
 
     def __str__(self):
         return ",".join( str(x) if x is not None else ''
@@ -179,15 +184,31 @@ def main(filename1, filename2):
     with open(filename2) as f2:
         L2 = parse_trade_file(f2)
 
+    matches, only_in_1, only_in_2 = reconcile(L1, L2)
+
     from pprint import pprint
-    pprint(list(L1))
-    pprint(list(L2))
+    pprint(len(L1))
+    pprint(len(L2))
+    pprint(len(matches))
+    pprint(len(only_in_1))
+    pprint(len(only_in_2))
+    pprint(matches)
+    pprint(only_in_1)
+    pprint(only_in_2)
 
 
 def reconcile(list1, list2):
     """
     returns (matches, only_in_1, only_in_2)
     """
+    set1 = set(list1)
+    set2 = set(list2)
+
+    matches = set1 & set2
+    only_in_1 = set1 - set2
+    only_in_2 = set2 - set1
+
+    return matches, only_in_1, only_in_2
 
 if __name__ == '__main__':
     main(*sys.argv[1:]) #TODO:replace this with argparse

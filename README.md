@@ -20,3 +20,4 @@ Assumptions
 
 * Files are of resonable length, such that they can both be read into memory at once.
 
+* All valid symbols have been provided.
