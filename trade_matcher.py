@@ -25,7 +25,7 @@ buysell_map= {
     'S':'2',
     }
 
-otype_month_code = {
+ctype_month_code = {
     'A': ('1' , 'C'),
     'B': ('2' , 'C'),
     'C': ('3' , 'C'),
@@ -52,21 +52,82 @@ otype_month_code = {
     'X': ('12', 'P'),
 }
 
+months = {
+    'Jan' : '1' ,
+    'Feb' : '2' ,
+    'Mar' : '3' ,
+    'Apr' : '4' ,
+    'May' : '5' ,
+    'Jun' : '6' ,
+    'Jul' : '7' ,
+    'Aug' : '8' ,
+    'Sep' : '9' ,
+    'Oct' : '10',
+    'Nov' : '11',
+    'Dec' : '12',
+    }
+
+
 
 class Trade(object):
-    """Trade class uses the csv format as it's internal format"""
-    def __init__(self, *args, format=None): #symbol, callput, strike, month, side, quantity, price):
-        #Todo: Stub
-        self.all = args
-        self.format = format
+    """
+    Trade class uses the csv symbols and codes in its internal format
+    Futures are indicated by 'F'
+    """
+    def __init__(self, symbol, contract_type, strike, month, side, quantity, price, format=None):
+        self.symbol        = symbol
+        self.contract_type = contract_type
+        self.strike        = strike
+        self.month         = month
+        self.side          = side
+        self.quantity      = quantity
+        self.price         = price
+        self._format       = format
 
     @classmethod
     def fromCSV(cls, line):
-        return Trade(line, format='CSV')
+        splitline = line.split(',')
+        return Trade(
+            symbol        = splitline[0],
+            contract_type = splitline[1] if splitline[1] else 'F',
+            strike        = splitline[2] if splitline[2] else None,
+            month         = splitline[3],
+            side          = splitline[4],
+            quantity      = splitline[5],
+            price         = splitline[6],
+            format='CSV')
 
     @classmethod
     def fromSDT(self, line):
-        return Trade(line, format='SDT')
+        splitline = line.split(';')
+        contract_codes = splitline[0].split(' ')
+        if contract_codes[1] in months:
+            contract_type = 'F'
+            month = months[contract_codes[1]]
+            strike = None
+        else:
+            contract_type, month = ctype_month_code[contract_codes[1][0]]
+            strike = contract_codes[1][1:]
+        return Trade(
+            symbol        = symbol_map[contract_codes[0]],
+            contract_type = contract_type,
+            strike        = strike,
+            month         = month,
+            side          = splitline[1],
+            quantity      = splitline[2],
+            price         = splitline[3],
+            format='SDT')
+
+    @property
+    def _asTuple(self):
+        return (self.symbol,
+                self.contract_type,
+                self.strike,
+                self.month,
+                self.side,
+                self.quantity,
+                self.price,
+                )
 
     def __eq__(self):
         pass
@@ -75,7 +136,10 @@ class Trade(object):
         pass
 
     def __str__(self):
-        return "{0},{1}".format(self.format, str(self.all))
+        return ",".join( str(x) if x is not None else ''
+                         for x
+                         in self._asTuple
+                         )
 
     __repr__ = __str__
 
@@ -88,7 +152,7 @@ def parse_trade_file(file):
     else:
         raise ValueError("Format not recognized: {0}".format(filename1))
 
-    return [trade_factory(line) for line in file]
+    return [trade_factory(line.strip()) for line in file if line.strip()]
 
 
 def main(filename1, filename2):
@@ -99,9 +163,9 @@ def main(filename1, filename2):
     with open(filename2) as f2:
         L2 = parse_trade_file(f2)
 
-        from pprint import pprint
-        pprint(list(L1))
-        pprint(list(L2))
+    from pprint import pprint
+    pprint(list(L1))
+    pprint(list(L2))
 
 
 def reconcile(list1, list2):
