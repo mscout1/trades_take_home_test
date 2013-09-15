@@ -14,21 +14,22 @@ extention. See "MO Developer Take-Home Test.docx" for details
 import sys
 from decimal import Decimal
 from copy import copy
+from textwrap import dedent
 
 #Mappings for sdt values and pretty formats
 def bijection(d):
-    """Makes a 2 way dictionary. Undefined if values are not unique"""
+    """Makes a 2 way dictionary. Undefined if values/keys are not unique"""
     d = copy(d)
     revd=dict([reversed(i) for i in d.items()])
     d.update(revd)
     return d
 
 
-symbol_map = {
+symbol_map = bijection({
     'JF'  : '35',
     'QAL' : 'F-',
     'RT'  : '1W',
-    }
+    })
 
 buysell_map= {
     'B':1,
@@ -186,6 +187,40 @@ def pretty_format(trade):
     return fstring.format(
             symbol, contract_type, month, strike_string, side, quantity, price)
 
+def verbose_format(trade):
+    symbol        = trade.symbol
+    alt_symbol    = symbol_map[trade.symbol]
+    contract_type = ctype_long[trade.contract_type]
+    strike        = trade.strike
+    month         = months[trade.month]
+    side          = 'Buy' if trade.side == 1 else 'Sell'
+    quantity      = trade.quantity
+    price         = trade.price
+
+    s = dedent("""
+    +------------------------------
+    |Symbol:............{0}
+    |Alternate Symbol:..{1}
+    |Type:..............{2}
+    |Month:.............{3}
+    |Strike:............{4}
+    |Side:..............{5}
+    |Qty:...............{6}
+    |Price:.............${7}
+    +------------------------------
+    """).format(
+            symbol,
+            alt_symbol,
+            contract_type,
+            strike,
+            month,
+            side,
+            quantity,
+            price,
+        ).strip()
+    return s #dedent(s)
+
+
 def parse_trade_file(file):
     header = file.readline()
     if ',' in header:
@@ -209,7 +244,10 @@ def parse_trade_file(file):
     return lst
 
 
-def main(filename1, filename2):
+def main(filename1, filename2, verbose=False):
+
+    formatter = verbose_format if verbose else pretty_format
+
     with open(filename1) as f1:
         L1 = parse_trade_file(f1)
 
@@ -220,15 +258,15 @@ def main(filename1, filename2):
 
     print("{0} Trades found in both lists:".format(len(matches)))
     for t in matches:
-        print(pretty_format(t))
+        print(formatter(t))
     print("\n"+"="*40 + "\n")
     print("{0} Trades found only in file 1:".format(len(only_in_1)))
     for t in only_in_1:
-        print(pretty_format(t))
+        print(formatter(t))
     print("\n"+"="*75 + "\n")
     print("{0} Trades found only in file 2:".format(len(only_in_2)))
     for t in only_in_2:
-        print(pretty_format(t))
+        print(formatter(t))
 
 
 def reconcile(list1, list2):
@@ -249,7 +287,9 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("file1")
     parser.add_argument("file2")
+    parser.add_argument("-v", "--verbose", help="increase output verbosity",
+                    action="store_true")
     args = parser.parse_args()
 
-    main(args.file1, args.file2)
+    main(args.file1, args.file2, args.verbose)
 

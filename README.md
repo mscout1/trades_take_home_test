@@ -23,3 +23,5 @@ Assumptions
 * All valid symbols have been provided.
 
 * We are to compare "contract, side, price, and quantity". I assume that contract includes all of(symbol, contract_type, strike, and month).
+
+* symbols are unique across both systems
