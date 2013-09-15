@@ -211,4 +211,11 @@ def reconcile(list1, list2):
     return matches, only_in_1, only_in_2
 
 if __name__ == '__main__':
-    main(*sys.argv[1:]) #TODO:replace this with argparse
+    import argparse
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("file1")
+    parser.add_argument("file2")
+    args = parser.parse_args()
+
+    main(args.file1, args.file2)
+

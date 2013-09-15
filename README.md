@@ -21,3 +21,5 @@ Assumptions
 * Files are of resonable length, such that they can both be read into memory at once.
 
 * All valid symbols have been provided.
+
+* We are to compare "contract, side, price, and quantity". I assume that contract includes all of(symbol, contract_type, strike, and month).
