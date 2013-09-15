@@ -13,8 +13,17 @@ extention. See "MO Developer Take-Home Test.docx" for details
 
 import sys
 from decimal import Decimal
+from copy import copy
 
-#Mappings for sdt values
+#Mappings for sdt values and pretty formats
+def bijection(d):
+    """Makes a 2 way dictionary. Undefined if values are not unique"""
+    d = copy(d)
+    revd=dict([reversed(i) for i in d.items()])
+    d.update(revd)
+    return d
+
+
 symbol_map = {
     'JF'  : '35',
     'QAL' : 'F-',
@@ -22,51 +31,57 @@ symbol_map = {
     }
 
 buysell_map= {
-    'B':'1',
-    'S':'2',
+    'B':1,
+    'S':2,
     }
 
 ctype_month_code = {
-    'A': ('1' , 'C'),
-    'B': ('2' , 'C'),
-    'C': ('3' , 'C'),
-    'D': ('4' , 'C'),
-    'E': ('5' , 'C'),
-    'F': ('6' , 'C'),
-    'G': ('7' , 'C'),
-    'H': ('8' , 'C'),
-    'I': ('9' , 'C'),
-    'J': ('10', 'C'),
-    'K': ('11', 'C'),
-    'L': ('12', 'C'),
-    'M': ('1' , 'P'),
-    'N': ('2' , 'P'),
-    'O': ('3' , 'P'),
-    'P': ('4' , 'P'),
-    'Q': ('5' , 'P'),
-    'R': ('6' , 'P'),
-    'S': ('7' , 'P'),
-    'T': ('8' , 'P'),
-    'U': ('9' , 'P'),
-    'V': ('10', 'P'),
-    'W': ('11', 'P'),
-    'X': ('12', 'P'),
+    'A': (1 , 'C'),
+    'B': (2 , 'C'),
+    'C': (3 , 'C'),
+    'D': (4 , 'C'),
+    'E': (5 , 'C'),
+    'F': (6 , 'C'),
+    'G': (7 , 'C'),
+    'H': (8 , 'C'),
+    'I': (9 , 'C'),
+    'J': (10, 'C'),
+    'K': (11, 'C'),
+    'L': (12, 'C'),
+    'M': (1 , 'P'),
+    'N': (2 , 'P'),
+    'O': (3 , 'P'),
+    'P': (4 , 'P'),
+    'Q': (5 , 'P'),
+    'R': (6 , 'P'),
+    'S': (7 , 'P'),
+    'T': (8 , 'P'),
+    'U': (9 , 'P'),
+    'V': (10, 'P'),
+    'W': (11, 'P'),
+    'X': (12, 'P'),
 }
 
-months = {
-    'Jan' : '1' ,
-    'Feb' : '2' ,
-    'Mar' : '3' ,
-    'Apr' : '4' ,
-    'May' : '5' ,
-    'Jun' : '6' ,
-    'Jul' : '7' ,
-    'Aug' : '8' ,
-    'Sep' : '9' ,
-    'Oct' : '10',
-    'Nov' : '11',
-    'Dec' : '12',
-    }
+months = bijection({
+    'Jan' : 1 ,
+    'Feb' : 2 ,
+    'Mar' : 3 ,
+    'Apr' : 4 ,
+    'May' : 5 ,
+    'Jun' : 6 ,
+    'Jul' : 7 ,
+    'Aug' : 8 ,
+    'Sep' : 9 ,
+    'Oct' : 10,
+    'Nov' : 11,
+    'Dec' : 12,
+    })
+
+ctype_long = {
+    'C' : 'Call Option',
+    'P' : 'Put Option',
+    'F' : 'Future',
+}
 
 
 
@@ -124,6 +139,10 @@ class Trade(object):
             format='SDT')
 
     @property
+    def is_future(self):
+        return self.contract_type == 'F'
+
+    @property
     def _asTuple(self):
         return (self.symbol,
                 self.contract_type,
@@ -153,6 +172,20 @@ class Trade(object):
 
     __repr__ = __str__
 
+def pretty_format(trade):
+    symbol        = trade.symbol
+    contract_type = ctype_long[trade.contract_type]
+    strike        = trade.strike
+    month         = months[trade.month]
+    side          = 'Buy' if trade.side == 1 else 'Sell'
+    quantity      = trade.quantity
+    price         = trade.price
+
+    strike_string = 'Strike: {0},'.format(strike) if not trade.is_future else ""
+    fstring = "<Symbol: {0}, Type: {1}, Month: {2}, {3} Side: {4}, Qty: {5}, Price: {6}>"
+    return fstring.format(
+            symbol, contract_type, month, strike_string, side, quantity, price)
+
 def parse_trade_file(file):
     header = file.readline()
     if ',' in header:
@@ -177,7 +210,6 @@ def parse_trade_file(file):
 
 
 def main(filename1, filename2):
-    #Todo: Stub
     with open(filename1) as f1:
         L1 = parse_trade_file(f1)
 
@@ -186,15 +218,17 @@ def main(filename1, filename2):
 
     matches, only_in_1, only_in_2 = reconcile(L1, L2)
 
-    from pprint import pprint
-    pprint(len(L1))
-    pprint(len(L2))
-    pprint(len(matches))
-    pprint(len(only_in_1))
-    pprint(len(only_in_2))
-    pprint(matches)
-    pprint(only_in_1)
-    pprint(only_in_2)
+    print("{0} Trades found in both lists:".format(len(matches)))
+    for t in matches:
+        print(pretty_format(t))
+    print("\n"+"="*40 + "\n")
+    print("{0} Trades found only in file 1:".format(len(only_in_1)))
+    for t in only_in_1:
+        print(pretty_format(t))
+    print("\n"+"="*75 + "\n")
+    print("{0} Trades found only in file 2:".format(len(only_in_2)))
+    for t in only_in_2:
+        print(pretty_format(t))
 
 
 def reconcile(list1, list2):
